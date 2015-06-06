@@ -67,6 +67,8 @@
     (if (= result "pending confirmation")
       [:pending]
       [:arn (sns/child-content result :subscription-arn)])))
+(defmethod flatten-response :confirm-subscription [_ m]
+  (sns/child-content m :subscription-arn))
 
 (defn issue-targeted-request! [target creds req-body]
   (go-catching
