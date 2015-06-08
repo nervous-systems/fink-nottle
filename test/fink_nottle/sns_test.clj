@@ -54,7 +54,6 @@
 
 (deftest ^:integration get-topic-attributes+
   (let [arn (create-topic*)]
-    ;; assert something?
     (is (map? (get-topic-attributes!! creds arn)))))
 
 (deftest ^:integration get-endpoint-attributes+

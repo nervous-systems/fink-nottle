@@ -6,6 +6,7 @@
    :secret-key (get (System/getenv) "AWS_SECRET_KEY")})
 
 (def platform-app-name "the-best-app")
+
 (def gcm-api-key (get (System/getenv) "GCM_API_KEY"))
 
 (defn random-name []
