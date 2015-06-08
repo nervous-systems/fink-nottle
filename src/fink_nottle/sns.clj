@@ -1,6 +1,6 @@
 (ns fink-nottle.sns
-  (:require [fink-nottle.internal :as i]
-            [fink-nottle.internal.sns]))
+  (:require [fink-nottle.internal :as i] :reload
+            [fink-nottle.internal.sns] :reload))
 
 (i/defissuers
   :sns

@@ -3,31 +3,46 @@
             [fink-nottle.internal :refer [restructure-response]]
             [eulalie.util.xml :as xml]
             [fink-nottle.internal.util :as util]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [glossop :refer [fn->]]))
 
-(defn application-arn [m]
-  (xml/child-content m :platform-application-arn))
+;; Most of this stuff ought to move into eulalie, like SQS
+
+(defn application-arn [m] (xml/child-content m :platform-application-arn))
+(defn endpoint-arn    [m] (xml/child-content m :endpoint-arn))
 
 (defmethod restructure-response [:sns :create-platform-application] [_ _ m]
   (application-arn m))
 
-(defn attrs->map [attributes]
-  (-> (into {}
-        (for [entry (xml/children attributes :entry)]
-          [(csk/->kebab-case-keyword (xml/child-content entry :key))
-           (xml/child-content entry :value)]))
-      (update-in [:enabled] = "true")))
+(defn attrs->map
+  [attributes & [{:keys [parent] :or {parent :entry}}]]
+  (let [{:keys [enabled] :as m}
+        (into {}
+          (for [entry (xml/children attributes parent)]
+            [(csk/->kebab-case-keyword (xml/child-content entry :key))
+             (xml/child-content entry :value)]))]
+    (cond-> m enabled (assoc :enabled (= enabled "true")))))
 
 (defn flatten-application [{[arn {:keys [attributes]}] :member}]
   (-> attributes
       attrs->map
       (assoc :arn (application-arn arn))))
 
-(defmethod restructure-response [:sns :list-platform-applications] [_ _ m]
+(defn restructure-member-list [m apply-me]
   (with-meta
     (for [member (xml/children m :member)]
-      (flatten-application member))
+      (apply-me member))
     {:next-token (xml/child-content m :next-token)}))
+
+(defmethod restructure-response [:sns :list-platform-applications] [_ _ m]
+  (restructure-member-list m flatten-application))
+
+(defmethod restructure-response [:sns :list-endpoints-by-platform-application] [_ _ m]
+  (restructure-member-list
+   m
+   (fn [endpoint]
+     (assoc (attrs->map endpoint) :arn
+            (endpoint-arn endpoint)))))
 
 (defmethod restructure-response [:sns :get-endpoint-attributes] [_ _ m]
   (attrs->map (xml/child m :attributes)))
@@ -41,7 +56,6 @@
                                  :subscriptions-confirmed
                                  :subscriptions-deleted})))
 
-;; All this stuff ought to move into eulalie
 (defmethod restructure-response [:sns :create-platform-endpoint] [_ _ m]
   (xml/child-content m :endpoint-arn))
 (defmethod restructure-response [:sns :create-topic] [_ _ m]
@@ -49,9 +63,28 @@
 (defmethod restructure-response [:sns :publish] [_ _ m]
   (xml/child-content m :message-id))
 (defmethod restructure-response [:sns :subscribe] [_ _ m]
-  (let [result (xml/child-content m :subscribe-result)]
+  (let [result (xml/child-content m :subscription-arn)]
     (if (= result "pending confirmation")
-      [:pending]
-      [:arn (xml/child-content result :subscription-arn)])))
-(defmethod restructure-response :confirm-subscription [_ _ m]
-  (xml/child-content m :subscription-arn))
+      :fink-nottle/pending
+      result)))
+
+(defn fix-subscription-arn [x]
+  (if (= x "PendingConfirmation") :fink-nottle/pending x))
+
+(defmethod restructure-response [:sns :confirm-subscription] [_ _ m]
+  (fix-subscription-arn (xml/child-content m :subscription-arn)))
+
+(def subscription-attrs #{:protocol :owner :topic-arn :subscription-arn :endpoint})
+
+(defn restructure-subscription [m]
+  (-> m
+      (xml/child-content->map subscription-attrs)
+      (update-in [:subscription-arn] fix-subscription-arn)))
+
+(defn restructure-subscriptions [resp]
+  (map restructure-subscription (xml/children resp :member)))
+
+(defmethod restructure-response [:sns :list-subscriptions] [_ _ m]
+  (restructure-member-list m restructure-subscription))
+(defmethod restructure-response [:sns :list-subscriptions-by-topic] [_ _ m]
+  (restructure-member-list m restructure-subscription))

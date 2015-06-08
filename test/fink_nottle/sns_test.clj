@@ -1,24 +1,24 @@
 (ns fink-nottle.sns-test
-  (:require [fink-nottle.sns :refer :all]
+  (:require [clojure.core.async :as async]
+            [fink-nottle.sns :refer :all]
+            [fink-nottle.test-util :refer :all]
             [clojure.test :refer :all]))
 
-(def platform-app-name "the-best-app")
-(def gcm-api-key (get (System/getenv) "GCM_API_KEY"))
-
-(def creds
-  {:access-key (get (System/getenv) "AWS_ACCESS_KEY")
-   :secret-key (get (System/getenv) "AWS_SECRET_KEY")})
-
-(defn create-platform-application* []
+(defn create-platform-application*
+  [& [{:keys [name] :or {name platform-app-name}}]]
   (create-platform-application!!
    creds
    :GCM
-   platform-app-name
+   name
    {:platform-credential gcm-api-key}))
 
 (deftest ^:integration create-platform-application+
   (is (= "arn:" (-> (create-platform-application*)
                     (subs 0 4)))))
+
+(deftest ^:integration delete-platform-application+
+  (let [arn (create-platform-application* (random-name))]
+    (is (delete-platform-application!! creds arn))))
 
 (deftest ^:integration list-platform-applications+
   (let [arn (create-platform-application*)]
@@ -35,6 +35,15 @@
   (let [p-arn (create-platform-application*)]
     (is (= "arn:" (-> (create-platform-endpoint* p-arn)
                       (subs 0 4))))))
+
+(deftest ^:integration list-endpoints-by-platform-application+
+  (let [p-arn (create-platform-application*)
+        e-arn (create-platform-endpoint* p-arn)
+        arns
+        (->> (list-endpoints-by-platform-application!! creds p-arn)
+             (map :arn)
+             (into #{}))]
+    (is (arns e-arn))))
 
 (defn create-topic* []
   (create-topic!! creds :amazing-topic))
@@ -69,6 +78,5 @@
 (deftest ^:integration subscribe+
   (let [p-arn (create-platform-application*)
         e-arn (create-platform-endpoint* p-arn)
-        [tag res] (subscribe!! creds (create-topic*) :application e-arn)]
-    (is (= :arn tag))
+        res (subscribe!! creds (create-topic*) :application e-arn)]
     (is (= "arn:" (subs res 0 4)))))
