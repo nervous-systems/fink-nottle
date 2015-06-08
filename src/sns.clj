@@ -1,7 +1,9 @@
-(ns fink-nottle
-  (:require [fink-nottle.internal :as i]))
+(ns fink-nottle.sns
+  (:require [fink-nottle.internal :as i]
+            [fink-nottle.internal.sns]))
 
 (i/defissuers
+  :sns
   {create-topic         [name]
    delete-topic         [topic-arn]
    get-topic-attributes [topic-arn]
@@ -32,3 +34,4 @@
    list-endpoints-by-platform-application [platform-application-arn]
 
    create-platform-endpoint [platform-application-arn token]})
+
