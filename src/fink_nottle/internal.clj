@@ -1,5 +1,6 @@
 (ns fink-nottle.internal
-  (:require [plumbing.map]
+  (:require [eulalie]
+            [plumbing.map]
             [clojure.core.async :as async]
             [cheshire.core :as json]
             [glossop :refer [go-catching <? <?!]]))
