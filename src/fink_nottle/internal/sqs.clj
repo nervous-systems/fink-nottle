@@ -22,7 +22,8 @@
    :maximum-retention-period ->int
    :delay-seconds ->int
    :receive-message-wait-time-seconds ->int
-   :sent-timestamp ->long})
+   :sent-timestamp ->long
+   :sender-fault (partial = "true")})
 
 (defn attr-val-out [x]
   (cond
