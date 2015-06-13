@@ -11,25 +11,31 @@
     (fn [{:keys [url]}]
       (let [msgs (for [i (range 11)] {:body (str i)})]
         (sqs/send-message-batch!! creds url (take 10 msgs) {:generate-ids true})
-        (sqs/send-message!! creds url (:body (last msgs)))
-        (let [out-bodies (->> (channeled/receive-message! creds url)
-                              (a/take 11) (a/into []) a/<!!
+        (sqs/send-message!! creds url (last msgs))
+        (let [out-chan   (channeled/receive-message! creds url)
+              out-bodies (->> out-chan (a/take 11) (a/into []) a/<!!
                               (map :body))]
+          (a/close! out-chan)
           (is (= (into #{} (map :body msgs))
                  (into #{} out-bodies))))))))
 
 (defn recording-batch-mock [chan]
   (fn [_ _ batch & _]
-    (a/onto-chan chan batch)
-    (a/go {})))
+    (a/go
+      (a/<! (a/onto-chan chan batch false))
+      {})))
+
+(def closed-ch (a/chan))
+(a/close! closed-ch)
 
 (deftest send-message-batch+sends
   (sqs-util/with-transient-queue
     (fn [{:keys [url]}]
-      (let [record-chan (a/chan)]
-        (channeled/send-message-batch!
-         creds url {:in-chan (a/to-chan [{:id "0"} {:id "1"}])})
+      (let [record-chan (a/chan 2)]
         (with-redefs [sqs/send-message-batch! (recording-batch-mock record-chan)]
+          (channeled/send-message-batch!
+           creds url {:in-chan (a/to-chan [{:id "0"} {:id "1"}])
+                      :timeout-fn (constantly closed-ch)})
           (a/alt!!
             (a/timeout 1000) (is false "Test timed out")
             (->> record-chan (a/take 2) (a/into []))
@@ -44,10 +50,11 @@
 (deftest send-message-batch+failure
   (sqs-util/with-transient-queue
     (fn [{:keys [url]}]
-      (let [{:keys [error-chan]}
-            (channeled/send-message-batch!
-             creds url {:in-chan (a/to-chan [{:id "0"} {:id "1"}])})]
-        (with-redefs [sqs/send-message-batch! failing-batch-mock]
+      (with-redefs [sqs/send-message-batch! failing-batch-mock]
+        (let [{:keys [error-chan]}
+              (channeled/send-message-batch!
+               creds url {:in-chan (a/to-chan [{:id "0"} {:id "1"}])
+                          :timeout-fn (constantly closed-ch)})]
           (a/alt!!
             (a/timeout 1000) (is false "Test timed out")
             (a/into [] error-chan)

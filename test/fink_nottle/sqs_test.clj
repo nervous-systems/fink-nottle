@@ -9,7 +9,7 @@
   (let [input (byte-array [0 0xFFF 97])]
     (sqs-util/with-transient-queue
       (fn [{:keys [url]}]
-        (sqs/send-message!! creds url "body" {:attrs {:x input}})
+        (sqs/send-message!! creds url {:body "body" :attrs {:x input}})
         (let [[{{output :x} :attrs}]
               (sqs/receive-message!!
                creds url {:wait-seconds 2 :attrs [:x]})]

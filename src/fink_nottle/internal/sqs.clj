@@ -3,6 +3,7 @@
             [clojure.walk :as walk]
             [fink-nottle.internal :as i]
             [fink-nottle.internal.util :as util]
+            [fink-nottle.sqs.tagged :as tagged]
             [plumbing.core :as p]))
 
 (def ->int  #(Integer/parseInt %))
@@ -26,12 +27,13 @@
    :sender-fault (partial = "true")})
 
 (defn attr-val-out [x]
-  (cond
-    (string? x)          [:string x]
-    (number? x)          [:number (str x)]
-    (util/byte-array? x) [:binary (util/ba->b64-string x)]
-    :else (throw (ex-info "bad-attr-type"
-                          {:type :bad-attr-type :value x}))))
+  (let [x (cond-> x (keyword? x) name)]
+   (cond
+     (string? x)          [:string x]
+     (number? x)          [:number (str x)]
+     (util/byte-array? x) [:binary (util/ba->b64-string x)]
+     :else (throw (ex-info "bad-attr-type"
+                           {:type :bad-attr-type :value x})))))
 
 (defn attr-val-in [[tag value]]
   (case tag
@@ -39,22 +41,36 @@
     :number (util/string->number value)
     :binary (util/b64-string->ba value)))
 
+(defn augment-outgoing [{:keys [attrs body fink-nottle/tag] :as m}]
+  (cond-> m tag
+          (assoc
+           :body (tagged/message-out tag body)
+           :attrs (assoc attrs :fink-nottle-tag tag))))
+
 (defmethod i/restructure-request [:sqs :send-message]
-  [_ _ {:keys [attrs] :as message}]
-  (assoc message :attrs (p/map-vals attr-val-out attrs)))
+  [_ _ message]
+  (let [{:keys [attrs] :as message} (augment-outgoing message)]
+    (assoc message :attrs (p/map-vals attr-val-out attrs))))
 
 (defmethod i/restructure-request [:sqs :send-message-batch]
   [_ _ {:keys [messages generate-ids] :as m}]
   (assoc m :messages
          (map-indexed
-          (fn [i {:keys [attrs] :as msg}]
-            (cond-> (assoc msg :attrs (p/map-vals attr-val-out attrs))
-              generate-ids (assoc :id (str i))))
+          (fn [i msg]
+            (let [{:keys [attrs] :as msg} (augment-outgoing msg)]
+              (cond-> (assoc msg :attrs (p/map-vals attr-val-out attrs))
+                generate-ids (assoc :id (str i)))))
           messages)))
 
-(defn restructure-message [m]
-  (let [{:keys [attrs] :as m} (util/visit-values m key->xform)]
-    (assoc m :attrs (p/map-vals attr-val-in attrs))))
+(defn augment-incoming [{{:keys [fink-nottle-tag]} :attrs body :body :as m}]
+  (cond-> m fink-nottle-tag
+          (assoc :body (tagged/message-in (keyword fink-nottle-tag) body))))
+
+(defn restructure-message [{:keys [attrs] :as m}]
+  (-> m
+      (util/visit-values key->xform)
+      (assoc :attrs (p/map-vals attr-val-in attrs))
+      augment-incoming))
 
 (defmethod i/restructure-response [:sqs :receive-message] [_ _ ms]
   (map restructure-message ms))
