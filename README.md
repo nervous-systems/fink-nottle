@@ -1,4 +1,7 @@
 # fink-nottle [![Build Status](https://travis-ci.org/nervous-systems/fink-nottle.svg?branch=master)](https://travis-ci.org/nervous-systems/fink-nottle)
+
+[![Clojars Project](http://clojars.org/io.nervous/fink-nottle/latest-version.svg)](http://clojars.org/io.nervous/fink-nottle)
+
 Asynchronous Clojure client for Amazon's SQS & SNS services
 
 ## SQS Example
