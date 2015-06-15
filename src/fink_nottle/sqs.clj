@@ -20,7 +20,6 @@
    get-queue-url      [queue-name]
    list-queues        []
    purge-queue        [queue-url]
-   receive-message    [queue-url]
    add-permission     [queue-url]
    remove-permission  [queue-url label]
    send-message       [queue-url]
@@ -47,3 +46,10 @@
 (defn processed! [creds queue-url {:keys [receipt-handle]} & [extra]]
   (delete-message! creds queue-url receipt-handle extra))
 (def processed!! (comp <?! processed!))
+
+(defn receive-message! [creds queue-url & [extra]]
+  (i/issue-targeted-request!
+   :sqs :receive-message creds
+   (assoc (merge {:attrs :all} extra)
+          :queue-url queue-url)))
+(def receive-message!! (comp <?! receive-message!))
