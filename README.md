@@ -4,6 +4,9 @@
 
 Asynchronous Clojure client for Amazon's SQS & SNS services
 
+ * [Blog post covering SQS](https://nervous.io/clojure/aws/async/sqs/messaging/2015/06/15/fink-nottle-sqs/)
+ * [Blog post covering SNS](https://nervous.io/clojure/aws/async/sns/messaging/2015/06/15/fink-nottle-sns/)
+
 ## SQS Example
 
 ```clojure
