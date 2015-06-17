@@ -14,7 +14,6 @@
                  [io.nervous/eulalie     "0.3.2"]
                  [io.nervous/glossop     "0.1.0"]
 
-                 [camel-snake-kebab      "0.2.5"]
                  [prismatic/plumbing     "0.4.1"]
                  [cheshire               "5.5.0"]]
   :exclusions [[org.clojure/clojure]])

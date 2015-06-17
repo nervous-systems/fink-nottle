@@ -1,6 +1,5 @@
 (ns fink-nottle.internal.sns
-  (:require [camel-snake-kebab.core :as csk]
-            [cheshire.core :as json]
+  (:require [cheshire.core :as json]
             [clojure.walk :as walk]
             [eulalie.util.xml :as xml]
             [fink-nottle.internal :as i]
