@@ -4,6 +4,7 @@
             [fink-nottle.internal :as i]
             [fink-nottle.internal.util :as util]
             [fink-nottle.sqs.tagged :as tagged]
+            [eulalie.sqs]
             [plumbing.core :as p]))
 
 (def ->int  #(Integer/parseInt %))

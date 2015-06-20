@@ -2,6 +2,7 @@
   (:require [cheshire.core :as json]
             [clojure.walk :as walk]
             [eulalie.util.xml :as xml]
+            [eulalie.sns]
             [fink-nottle.internal :as i]
             [fink-nottle.internal.util :as util]
             [glossop :refer [fn->]]))
