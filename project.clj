@@ -1,4 +1,4 @@
-(defproject io.nervous/fink-nottle "0.2.0-SNAPSHOT"
+(defproject io.nervous/fink-nottle "0.2.0"
   :description "Asynchronous Clojure client for the Amazon SNS service"
   :url "https://github.com/nervous-systems/fink-nottle"
   :license {:name "Unlicense" :url "http://unlicense.org/UNLICENSE"}
