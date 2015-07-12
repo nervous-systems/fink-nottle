@@ -37,8 +37,8 @@
                   ~(keyword target-name) ~'creds
                   (merge (plumbing.map/keyword-map ~@args) ~'extra))]
     `(do
-       (defn ~fname!  {:doc ~doc} ~args' ~body)
-       (defn ~fname!! {:doc ~doc} ~args' (<?! ~body)))))
+       (defn ~(with-meta fname!  {:doc ~doc}) ~args' ~body)
+       (defn ~(with-meta fname!! {:doc ~doc}) ~args' (<?! ~body)))))
 
 (defmacro defissuers [service-name t->args]
   `(do
