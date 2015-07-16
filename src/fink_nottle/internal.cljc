@@ -16,9 +16,10 @@
        (restructure-response service target)
        (parse-service-values service target)))
 
-(defmacro defissuers [service-name t->args]
-  `(do
-     ~@(for [[target args] t->args]
-         `(eulalie.support/defissuer ~service-name ~target ~args
-            (partial restructure-request ~service-name)
-            (partial handle-response ~service-name)))))
+#? (:clj
+    (defmacro defissuers [service-name t->args]
+      `(do
+         ~@(for [[target args] t->args]
+             `(eulalie.support/defissuer ~service-name ~target ~args
+                (partial restructure-request ~service-name)
+                (partial handle-response ~service-name))))))

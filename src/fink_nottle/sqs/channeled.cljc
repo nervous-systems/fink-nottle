@@ -4,10 +4,11 @@
             [glossop.core #?@ (:clj [:refer [go-catching <?]])]
             [glossop.util :refer [onto-chan?]]
             #? (:clj
-                [clojure.core.async :as a :refer [>!]]
+                [clojure.core.async :as a :refer [>! alt!]]
                 :cljs
                 [cljs.core.async :as a :refer [>!]]))
-  #? (:cljs (:require-macros [glossop.macros :refer [go-catching <?]])))
+  #? (:cljs (:require-macros [glossop.macros :refer [go-catching <?]]
+                             [cljs.core.async.macros :refer [alt!]])))
 
 (defn receive! [creds queue-url & [{:keys [chan] :as params}]]
   (let [{:keys [maximum] :as params} (merge {:wait-seconds 20} params)
@@ -16,12 +17,12 @@
       (loop []
         (let [messages (try
                          (-> (sqs/receive-message! creds queue-url params) <?)
-                         (catch #? (:clj Exception :cljs js/Error e)
+                         (catch #? (:clj Exception :cljs js/Error) e
                            (>! chan e)
                            ::error))]
           (if (and (not= messages ::error)
                    (or (empty? messages)
-                       (<! (onto-chan? chan messages))))
+                       (<? (onto-chan? chan messages))))
             (recur)
             (a/close! chan)))))
     chan))
@@ -59,7 +60,7 @@
     (go-catching
       (loop [batch []]
         (let [msg (if (not-empty batch)
-                    (a/alt!
+                    (alt!
                       (timeout-fn period-ms) ::timeout
                       in-chan ([v] v))
                     (<? in-chan))]

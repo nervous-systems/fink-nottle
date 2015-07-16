@@ -1,9 +1,10 @@
 (ns fink-nottle.sns.channeled-test
-  (:require [fink-nottle.sns.channeled :as channeled]
-            [fink-nottle.sns :as sns]
-            [fink-nottle.test-util :refer :all]
-            [clojure.test :refer :all]
-            [clojure.core.async :as async]))
+  ;; (:require [fink-nottle.sns.channeled :as channeled]
+  ;;           [fink-nottle.sns :as sns]
+  ;;           [fink-nottle.test-util :refer :all]
+  ;;           [clojure.test :refer :all]
+  ;;           [clojure.core.async :as async])
+  )
 
 ;; Have another go at this
 

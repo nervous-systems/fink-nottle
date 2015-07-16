@@ -5,7 +5,7 @@
                   [fink-nottle.internal :refer [defissuers]]]
                  :cljs
                  [[cljs.core.async]]))
-  #? (:cljs (:require-macros [fink.nottle.internal :refer [defissuers]])))
+  #? (:cljs (:require-macros [fink-nottle.internal :refer [defissuers]])))
 
 (defissuers
   :sns

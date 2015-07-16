@@ -6,7 +6,7 @@
                 [glossop.core :refer [<?! <? go-catching]]
                 :cljs
                 [cljs.core.async]))
-  #? (:cljs (:require-macros [fink.nottle.internal :refer [defissuers]]
+  #? (:cljs (:require-macros [fink-nottle.internal :refer [defissuers]]
                              [glossop.macros :refer [<? go-catching]])))
 
 (defissuers
@@ -53,15 +53,12 @@
 #? (:clj (def processed!! (comp <?! processed!)))
 
 (defn receive-message! [creds queue-url & [extra]]
-  (go-catching
-    (let [resp
-          (<? (eulalie.support/issue-request!
-               {:service :sqs
-                :target :receive-message
-                :creds creds
-                :body (i/restructure-request
-                       :sqs
-                       :receive-message
-                       (merge {:attrs :all :queue-url queue-url} extra))}))]
-      (i/handle-response :sqs :receive-message resp))))
+  (eulalie.support/issue-request!
+   {:service :sqs
+    :target :receive-message
+    :creds creds
+    :body (merge {:attrs :all :queue-url queue-url} extra)}
+   (partial i/restructure-request :sqs)
+   (partial i/handle-response :sqs)))
+
 #? (:clj (def receive-message!! (comp <?! receive-message!)))

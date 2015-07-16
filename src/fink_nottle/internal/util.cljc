@@ -1,5 +1,6 @@
 (ns fink-nottle.internal.util
-  (:require [clojure.walk :as walk]))
+  (:require [clojure.walk :as walk]
+            [fink-nottle.internal.platform :refer [->int]]))
 
 (defn visit-values [x k->xform]
   (if (map? x)
@@ -17,7 +18,7 @@
   (reduce
    (fn [m k]
      (if-let [v (m k)]
-       (assoc m k (bigint v))
+       (assoc m k (->int v))
        m))
    m ks))
 

@@ -1,4 +1,5 @@
 (ns fink-nottle.internal.platform
+  (:require [cljs.nodejs :as nodejs])
   (:require-macros [cljs.core :refer [instance?]]))
 
 (def ->int js/parseInt)
