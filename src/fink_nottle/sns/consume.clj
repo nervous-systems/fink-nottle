@@ -3,12 +3,12 @@
             [cemerick.url :as url]
             [cheshire.core :as json]
             [clojure.core.async :as async :refer [go <!]]
-            [clojure.data.codec.base64 :as b64]
+            [base64-clj.core :as b64]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [eulalie.service-util :as service-util]
-            [eulalie.util :as util]
-            [glossop :refer [go-catching]])
+            [eulalie.util.service :as util.service]
+            [eulalie.platform]
+            [glossop.core :refer [go-catching]])
   (:import [java.security Signature PublicKey]
            [java.security.cert CertificateFactory Certificate]))
 
@@ -27,7 +27,7 @@
 
 (defn verify-cert-url [url expected-region]
   (let [url (cond-> url (string? url) url/url)
-        reference (service-util/region->endpoint
+        reference (util.service/region->endpoint
                    expected-region {:service-name :sns})]
     (and (= (:protocol url) "https")
          (= (:host url) (:host reference)))))
@@ -38,7 +38,7 @@
   (go-catching
     (or (and key-cache (@key-cache url))
         (let [{:keys [body error]}
-              (<! (util/channel-request! {:url (str url)}))]
+              (<! (eulalie.platform/http-get! (str url)))]
           (if error
             error
             (let [pk (-> (CertificateFactory/getInstance "X.509")
@@ -65,7 +65,7 @@
   (let [sig (Signature/getInstance "SHA1withRSA")]
     (.initVerify sig ^PublicKey pk)
     (.update sig ^bytes (bytes-to-sign m))
-    (.verify sig (b64/decode (.getBytes ^String signature "UTF-8")))))
+    (.verify sig (b64/decode signature))))
 
 (defn verify-message! [{:keys [signing-cert-url] :as m} region & [key-cache]]
   (go-catching

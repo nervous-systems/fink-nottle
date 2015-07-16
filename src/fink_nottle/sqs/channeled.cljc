@@ -1,22 +1,27 @@
 (ns fink-nottle.sqs.channeled
   (:require [fink-nottle.sqs :as sqs]
             [fink-nottle.internal.util :as util]
-            [clojure.core.async :as a :refer [<! >! go]]
-            [glossop :as g]))
+            [glossop.core #?@ (:clj [:refer [go-catching <?]])]
+            [glossop.util :refer [onto-chan?]]
+            #? (:clj
+                [clojure.core.async :as a :refer [>!]]
+                :cljs
+                [cljs.core.async :as a :refer [>!]]))
+  #? (:cljs (:require-macros [glossop.macros :refer [go-catching <?]])))
 
 (defn receive! [creds queue-url & [{:keys [chan] :as params}]]
-  (let [{:keys [maximum] :as params} (merge {:maximum 10 :wait-seconds 20} params)
+  (let [{:keys [maximum] :as params} (merge {:wait-seconds 20} params)
         chan (or chan (a/chan maximum))]
-    (go
+    (go-catching
       (loop []
         (let [messages (try
-                         (-> (sqs/receive-message! creds queue-url params) g/<?)
-                         (catch Exception e
+                         (-> (sqs/receive-message! creds queue-url params) <?)
+                         (catch #? (:clj Exception :cljs js/Error e)
                            (>! chan e)
                            ::error))]
           (if (and (not= messages ::error)
                    (or (empty? messages)
-                       (<! (util/onto-chan? chan messages))))
+                       (<! (onto-chan? chan messages))))
             (recur)
             (a/close! chan)))))
     chan))
@@ -31,18 +36,18 @@
   (ex-info (name code) (assoc failure :type code)))
 
 (defn- batch-send! [issue-fn batch error-chan]
-  (g/go-catching
+  (go-catching
     (try
-      (let [{:keys [failed]} (g/<? (issue-fn (identify-batch batch)))]
+      (let [{:keys [failed]} (<? (issue-fn (identify-batch batch)))]
         (when-let [exs (some->> failed vals (map failure->throwable) not-empty)]
-          (<! (a/onto-chan error-chan exs false))))
-      (catch Exception e
+          (<? (a/onto-chan error-chan exs false))))
+      (catch #? (:clj Exception :cljs js/Error) e
         (>! error-chan e)))))
 
 (defn- batch-cleanup! [issue-fn batch error-chan]
-  (go
+  (go-catching
     (when (not-empty batch)
-      (<! (batch-send! issue-fn batch error-chan)))
+      (<? (batch-send! issue-fn batch error-chan)))
     (a/close! error-chan)))
 
 (defn batching-channel*
@@ -51,18 +56,18 @@
        :or {period-ms 200 threshold 10 timeout-fn a/timeout}}]]
   (let [in-chan    (or in-chan (a/chan))
         error-chan (or error-chan (a/chan))]
-    (go
+    (go-catching
       (loop [batch []]
         (let [msg (if (not-empty batch)
                     (a/alt!
                       (timeout-fn period-ms) ::timeout
                       in-chan ([v] v))
-                    (<! in-chan))]
+                    (<? in-chan))]
           (if (nil? msg)
-            (<! (batch-cleanup! issue-fn batch error-chan))
+            (<? (batch-cleanup! issue-fn batch error-chan))
             (let [batch (cond-> batch (not= msg ::timeout) (conj msg))]
               (if (or (= threshold (count batch)) (= msg ::timeout))
-                (do (<! (batch-send! issue-fn batch error-chan))
+                (do (<? (batch-send! issue-fn batch error-chan))
                     (recur []))
                 (recur batch)))))))
     {:in-chan in-chan :error-chan error-chan}))

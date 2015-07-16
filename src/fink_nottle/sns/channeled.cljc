@@ -1,26 +1,30 @@
 (ns fink-nottle.sns.channeled
   (:require [fink-nottle.sns :as sns]
-            [fink-nottle.internal.util :as util]
-            [glossop :as g :refer [<?]]
-            [clojure.core.async :as async]))
+            [glossop.util :refer [onto-chan?]]
+            #?@ (:clj
+                 [[glossop.core :refer [<? go-catching]]
+                  [clojure.core.async :as async]]
+                 :cljs
+                 [[cljs.core.async :as async]]))
+  #? (:cljs (:require-macros [glossop.macros :refer [<? go-catching]])))
 
 (defn paginate! [f map-arg {:keys [limit maximum chan]}]
   (assert (or limit chan)
           "Please supply either a page-size (limit) or output channel")
   (let [chan (or chan (async/chan limit))]
-    (g/go-catching
+    (go-catching
       (try
         (loop [next-token nil n 0]
           (let [items (<? (f (cond-> map-arg next-token
                                      (assoc :next-token next-token))))
                 n (+ n (count items))
                 {:keys [next-token]} (meta items)]
-            (if (and (<? (util/onto-chan? chan items))
+            (if (and (<? (onto-chan? chan items))
                      next-token
                      (or (not maximum) (< n maximum)))
               (recur next-token n)
               (async/close! chan))))
-        (catch Exception e
+        (catch #? (:clj Exception :cljs js/Error) e
           (async/>! chan e)
           (async/close! chan))))
     chan))

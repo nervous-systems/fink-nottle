@@ -1,9 +1,13 @@
 (ns fink-nottle.sns
-  (:require [fink-nottle.internal :as i]
-            [fink-nottle.internal.sns]
-            [glossop :refer [<?!]]))
+  (:require [fink-nottle.internal.sns]
+            #?@ (:clj
+                 [[glossop.core :refer [<?!]]
+                  [fink-nottle.internal :refer [defissuers]]]
+                 :cljs
+                 [[cljs.core.async]]))
+  #? (:cljs (:require-macros [fink.nottle.internal :refer [defissuers]])))
 
-(i/defissuers
+(defissuers
   :sns
   {create-topic         [name]
    delete-topic         [topic-arn]
@@ -37,15 +41,16 @@
    create-platform-endpoint [platform-application-arn token]})
 
 (def set-subscription-attribute! set-subscription-attributes!)
-(def set-subscription-attribute!! (comp <?! set-subscription-attribute!))
+#? (:clj (def set-subscription-attribute!!
+           (comp <?! set-subscription-attribute!)))
 
 (def set-topic-attribute! set-topic-attributes!)
-(def set-topic-attribute!! (comp <?! set-topic-attribute!))
+#? (:clj (def set-topic-attribute!! (comp <?! set-topic-attribute!)))
 
 (defn publish-topic! [creds topic-arn message & [extra]]
   (publish! creds message (assoc extra :topic-arn topic-arn)))
-(def publish-topic!! (comp <?! publish-topic!))
+#? (:clj (def publish-topic!! (comp <?! publish-topic!)))
 
 (defn publish-endpoint! [creds target-arn message & [extra]]
   (publish! creds message (assoc extra :target-arn target-arn)))
-(def publish-endpoint!! (comp <?! publish-endpoint!))
+#? (:clj (def publish-endpoint!! (comp <?! publish-endpoint!)))

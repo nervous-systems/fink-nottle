@@ -1,46 +1,42 @@
 (ns fink-nottle.internal.sqs
-  (:require [clojure.set :as set]
-            [clojure.walk :as walk]
-            [fink-nottle.internal :as i]
+  (:require [fink-nottle.internal :as i]
             [fink-nottle.internal.util :as util]
+            [fink-nottle.internal.platform :refer [->int] :as platform]
             [fink-nottle.sqs.tagged :as tagged]
             [eulalie.sqs]
-            [plumbing.core :as p]))
-
-(def ->int  #(Integer/parseInt %))
-(def ->long #(Long/parseLong %))
+            [plumbing.core :refer [map-vals]]))
 
 (def key->xform
-  {:approximate-number-of-messages bigint
-   :approximate-number-of-messages-not-visible bigint
-   :approximate-number-of-messages-delayed bigint
-   :approximate-receive-count bigint
-   :approximate-first-receive-timestamp ->long
+  {:approximate-number-of-messages ->int
+   :approximate-number-of-messages-not-visible ->int
+   :approximate-number-of-messages-delayed ->int
+   :approximate-receive-count ->int
+   :approximate-first-receive-timestamp ->int
 
    :visibility-timeout ->int
-   :created-timestamp ->long
-   :last-modified-timestamp ->long
+   :created-timestamp ->int
+   :last-modified-timestamp ->int
    :maximum-message-size ->int
    :maximum-retention-period ->int
    :delay-seconds ->int
    :receive-message-wait-time-seconds ->int
-   :sent-timestamp ->long
-   :sender-fault (partial = "true")})
+   :sent-timestamp ->int
+   :sender-fault util/->bool})
 
 (defn attr-val-out [x]
   (let [x (cond-> x (keyword? x) name)]
    (cond
      (string? x)          [:string x]
      (number? x)          [:number (str x)]
-     (util/byte-array? x) [:binary (util/ba->b64-string x)]
+     (platform/byte-array? x) [:binary (platform/ba->b64-string x)]
      :else (throw (ex-info "bad-attr-type"
                            {:type :bad-attr-type :value x})))))
 
 (defn attr-val-in [[tag value]]
   (case tag
     :string value
-    :number (util/string->number value)
-    :binary (util/b64-string->ba value)))
+    :number (platform/string->number value)
+    :binary (platform/b64-string->ba value)))
 
 (defn augment-outgoing [{:keys [attrs body fink-nottle/tag] :as m}]
   (cond-> m tag
@@ -51,7 +47,7 @@
 (defmethod i/restructure-request [:sqs :send-message]
   [_ _ message]
   (let [{:keys [attrs] :as message} (augment-outgoing message)]
-    (assoc message :attrs (p/map-vals attr-val-out attrs))))
+    (assoc message :attrs (map-vals attr-val-out attrs))))
 
 (defmethod i/restructure-request [:sqs :send-message-batch]
   [_ _ {:keys [messages generate-ids] :as m}]
@@ -59,7 +55,7 @@
          (map-indexed
           (fn [i msg]
             (let [{:keys [attrs] :as msg} (augment-outgoing msg)]
-              (cond-> (assoc msg :attrs (p/map-vals attr-val-out attrs))
+              (cond-> (assoc msg :attrs (map-vals attr-val-out attrs))
                 generate-ids (assoc :id (str i)))))
           messages)))
 
@@ -70,7 +66,7 @@
 (defn restructure-message [{:keys [attrs] :as m}]
   (-> m
       (util/visit-values key->xform)
-      (assoc :attrs (p/map-vals attr-val-in attrs))
+      (assoc :attrs (map-vals attr-val-in attrs))
       augment-incoming))
 
 (defmethod i/restructure-response [:sqs :receive-message] [_ _ ms]
