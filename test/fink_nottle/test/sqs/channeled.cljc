@@ -2,19 +2,15 @@
   (:require [fink-nottle.sqs.channeled :as channeled]
             [fink-nottle.test.sqs.util :as sqs.util :refer [with-transient-queue!]]
             [fink-nottle.sqs :as sqs]
-            [fink-nottle.test.util :refer [creds]]
-            #?@ (:clj
-                 [[fink-nottle.test.async :refer [deftest]]
-                  [clojure.core.async :as a :refer [alt!]]
-                  [clojure.test :refer [is]]
-                  [glossop.core :refer [<? go-catching]]]
-                 :cljs
-                 [[cemerick.cljs.test]
-                  [cljs.core.async :as a]]))
-  #? (:cljs (:require-macros [glossop.macros :refer [go-catching <?]]
-                             [fink-nottle.test.async.macros :refer [deftest]]
-                             [cljs.core.async.macros :refer [alt!]]
-                             [cemerick.cljs.test :refer [is]])))
+            [glossop.core #? (:clj :refer :cljs :refer-macros) [go-catching <?]]
+            [fink-nottle.test.common :refer [creds]]
+            #? (:clj
+                [clojure.core.async :as a :refer [alt!]]
+                :cljs
+                [cljs.core.async :as a])
+            [fink-nottle.test.util
+             #? (:clj :refer :cljs :refer-macros) [deftest is]])
+  #? (:cljs (:require-macros [cljs.core.async.macros :refer [alt!]])))
 
 (deftest receive!
   (with-transient-queue!

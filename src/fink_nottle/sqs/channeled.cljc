@@ -1,14 +1,13 @@
 (ns fink-nottle.sqs.channeled
   (:require [fink-nottle.sqs :as sqs]
             [fink-nottle.internal.util :as util]
-            [glossop.core #?@ (:clj [:refer [go-catching <?]])]
             [glossop.util :refer [onto-chan?]]
+            [glossop.core #? (:clj :refer :cljs :refer-macros) [go-catching <?]]
             #? (:clj
                 [clojure.core.async :as a :refer [>! alt!]]
                 :cljs
                 [cljs.core.async :as a :refer [>!]]))
-  #? (:cljs (:require-macros [glossop.macros :refer [go-catching <?]]
-                             [cljs.core.async.macros :refer [alt!]])))
+  #? (:cljs (:require-macros [cljs.core.async.macros :refer [alt!]])))
 
 (defn receive! [creds queue-url & [{:keys [chan] :as params}]]
   (let [{:keys [maximum] :as params} (merge {:wait-seconds 20} params)

@@ -1,19 +1,11 @@
 (ns fink-nottle.test.sqs
   (:require [fink-nottle.internal]
             [fink-nottle.sqs :as sqs]
-            [fink-nottle.test.util :refer [creds]]
             [fink-nottle.test.sqs.util :refer [with-transient-queue!]]
-            #?@ (:clj
-                 [[fink-nottle.test.async :refer [deftest]]
-                  [clojure.core.async :as async]
-                  [clojure.test :refer [is]]
-                  [glossop.core :refer [<? go-catching]]]
-                 :cljs
-                 [[cemerick.cljs.test]
-                  [cljs.core.async :as async]]))
-  #? (:cljs (:require-macros [glossop.macros :refer [go-catching <?]]
-                             [fink-nottle.test.async.macros :refer [deftest]]
-                             [cemerick.cljs.test :refer [is]])))
+            [glossop.core #? (:clj :refer :cljs :refer-macros) [go-catching <?]]
+            [fink-nottle.test.common :refer [creds]]
+            [fink-nottle.test.util
+             #? (:clj :refer :cljs :refer-macros) [deftest is]]))
 
 (defn ba->seq [x]
   #? (:clj

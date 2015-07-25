@@ -1,6 +1,7 @@
 (ns fink-nottle.internal
   (:require [eulalie.core :as eulalie]
-            [eulalie.support]))
+            [eulalie.support])
+  #? (:cljs (:require-macros [fink-nottle.internal])))
 
 (defmulti  restructure-response (fn [service target m] [service target]))
 (defmethod restructure-response :default [_ _ m] m)

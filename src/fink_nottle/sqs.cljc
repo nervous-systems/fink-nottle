@@ -1,15 +1,10 @@
 (ns fink-nottle.sqs
   (:require [fink-nottle.internal.sqs]
-            [fink-nottle.internal :as i #?@ (:clj [:refer [defissuers]])]
-            [eulalie.support]
-            #? (:clj
-                [glossop.core :refer [<?! <? go-catching]]
-                :cljs
-                [cljs.core.async]))
-  #? (:cljs (:require-macros [fink-nottle.internal :refer [defissuers]]
-                             [glossop.macros :refer [<? go-catching]])))
+            [fink-nottle.internal :as internal]
+            [glossop.core :as g
+             #? (:clj :refer :cljs :refer-macros) [go-catching <?]]))
 
-(defissuers
+(internal/defissuers
   :sqs
   {change-message-visibility       [queue-url receipt-handle visibility-timeout]
    change-message-visibility-batch [queue-url messages]
@@ -33,24 +28,24 @@
 (defn get-queue-attribute! [creds q attr]
   (go-catching
     (-> (get-queue-attributes! creds q [attr]) <? attr)))
-#? (:clj (def get-queue-attribute!! (comp <?! get-queue-attribute!)))
+#? (:clj (def get-queue-attribute!! (comp g/<?! get-queue-attribute!)))
 
 (def set-queue-attribute! set-queue-attributes!)
-#? (:clj (def set-queue-attribute!! (comp <?! set-queue-attribute!)))
+#? (:clj (def set-queue-attribute!! (comp g/<?! set-queue-attribute!)))
 
 (defn queue-attribute-fetcher [attr]
   (fn [creds q]
     (get-queue-attribute! creds q attr)))
 
 (def queue-size!  (queue-attribute-fetcher :approximate-number-of-messages))
-#? (:clj (def queue-size!! (comp <?! queue-size!)))
+#? (:clj (def queue-size!! (comp g/<?! queue-size!)))
 
 (def queue-arn!  (queue-attribute-fetcher :queue-arn))
-#? (:clj (def queue-arn!! (comp <?! queue-arn!)))
+#? (:clj (def queue-arn!! (comp g/<?! queue-arn!)))
 
 (defn processed! [creds queue-url {:keys [receipt-handle]} & [extra]]
   (delete-message! creds queue-url receipt-handle extra))
-#? (:clj (def processed!! (comp <?! processed!)))
+#? (:clj (def processed!! (comp g/<?! processed!)))
 
 (defn receive-message! [creds queue-url & [extra]]
   (eulalie.support/issue-request!
@@ -58,7 +53,7 @@
     :target :receive-message
     :creds creds
     :body (merge {:attrs :all :queue-url queue-url} extra)}
-   (partial i/restructure-request :sqs)
-   (partial i/handle-response :sqs)))
+   (partial internal/restructure-request :sqs)
+   (partial internal/handle-response :sqs)))
 
-#? (:clj (def receive-message!! (comp <?! receive-message!)))
+#? (:clj (def receive-message!! (comp g/<?! receive-message!)))

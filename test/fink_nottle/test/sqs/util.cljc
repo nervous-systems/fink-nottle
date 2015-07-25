@@ -1,12 +1,7 @@
 (ns fink-nottle.test.sqs.util
   (:require [eulalie.core :as eulalie]
-            [fink-nottle.test.util :refer [creds]]
-            #?@ (:clj
-                 [[clojure.core.async :as async]
-                  [glossop.core :refer [<? go-catching]]]
-                 :cljs
-                 [[cljs.core.async :as async]]))
-  #? (:cljs (:require-macros [glossop.macros :refer [go-catching <?]])))
+            [fink-nottle.test.common :refer [creds]]
+            [glossop.core #? (:clj :refer :cljs :refer-macros) [go-catching <?]]))
 
 ;; whole bunch of junk copied from eulalie/test - fix
 

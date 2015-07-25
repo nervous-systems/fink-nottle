@@ -1,12 +1,11 @@
 (ns fink-nottle.sns.channeled
   (:require [fink-nottle.sns :as sns]
             [glossop.util :refer [onto-chan?]]
-            #?@ (:clj
-                 [[glossop.core :refer [<? go-catching]]
-                  [clojure.core.async :as async]]
-                 :cljs
-                 [[cljs.core.async :as async]]))
-  #? (:cljs (:require-macros [glossop.macros :refer [<? go-catching]])))
+            #? (:clj
+                [clojure.core.async :as async]
+                :cljs
+                [cljs.core.async :as async])
+            [glossop.core #? (:clj :refer :cljs :refer-macros) [go-catching <?]]))
 
 (defn paginate! [f map-arg {:keys [limit maximum chan]}]
   (assert (or limit chan)

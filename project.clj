@@ -21,8 +21,7 @@
   :node-dependencies [[source-map-support "0.2.8"]
                       [bignumber.js "2.0.7"]]
   :plugins [[lein-cljsbuild "1.0.6"]
-            [lein-npm "0.5.0"]
-            [com.cemerick/clojurescript.test "0.3.3"]]
+            [lein-npm "0.5.0"]]
   :cljsbuild
   {:builds [{:id "main"
              :source-paths ["src"]
@@ -31,16 +30,21 @@
                         :hashbang false
                         :optimizations :none
                         :source-map true}}
-            {:id "test"
+            {:id "test-none"
              :source-paths ["src" "test"]
-             :compiler {:output-to "target/js-test/test.js"
-                        :output-dir "target/js-test"
+             :notify-command ["node" "target/test-none/fink-nottle-test.js"]
+             :compiler {:output-to "target/test-none/fink-nottle-test.js"
+                        :output-dir "target/test-none"
                         :target :nodejs
-                        :hashbang false
-                        :source-map true
-                        :optimizations :none}}]
-   :test-commands {"node" ["node" "runner-none.js" "target/js-test"
-                           "target/js-test/test.js"]}}
+                        :optimizations :none
+                        :main "fink-nottle.test.runner"}}
+            {:id "test-advanced"
+             :source-paths ["src" "test"]
+             :notify-command ["node" "target/test-advanced/fink-nottle-test.js"]
+             :compiler {:output-to "target/test-advanced/fink-nottle-test.js"
+                        :output-dir "target/test-advanced"
+                        :target :nodejs
+                        :optimizations :advanced}}]}
   :profiles {:dev
              {:repl-options
               {:nrepl-middleware
