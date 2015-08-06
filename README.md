@@ -10,13 +10,16 @@ Asynchronous Clojure client for Amazon's SQS & SNS services
 ## SQS Example
 
 ```clojure
+(require '[fink-nottle.sqs.tagged :as sqs.tagged]
+         '[fink-nottle.sqs.channeled :as sqs.channeled])
+         
 (defmethod sqs.tagged/message-in  :edn [_ body]
   (clojure.edn/read-string body))
 (defmethod sqs.tagged/message-out :edn [_ body] (pr-str body))
 
 (defn send-loop! [creds queue-url]
   (let [{:keys [in-chan]}
-        (channeled/batching-sends creds queue-url)]
+        (sqs.channeled/batching-sends creds queue-url)]
     (go
       (loop [i 0]
         (>! in-chan {:body {:event :increment :value i}
@@ -25,11 +28,7 @@ Asynchronous Clojure client for Amazon's SQS & SNS services
         (recur (inc i))))))
 
 (defn receive-loop! [id creds queue-url]
-  (let [messages (channeled/receive! creds queue-url)
-        deletes  (channeled/batching-deletes creds queue-url)]
-    (go
-      (loop []
-        (let [{:keys [body attrs] :as message} (<! messages)]
-          (>! deletes message)
-          (recur))))))
+  (let [messages (sqs.channeled/receive! creds queue-url)
+        {deletes :in-chan} (sqs.channeled/batching-deletes creds queue-url)]
+    (async/pipe messages deletes)))
 ```
