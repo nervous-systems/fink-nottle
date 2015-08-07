@@ -9,8 +9,8 @@
                 [cljs.core.async :as a :refer [>!]]))
   #? (:cljs (:require-macros [cljs.core.async.macros :refer [alt!]])))
 
-(defn receive! [creds queue-url & [{:keys [chan] :as params}]]
-  (let [{:keys [maximum] :as params} (merge {:wait-seconds 20} params)
+(defn receive! [creds queue-url & [params {:keys [chan close?] :or {close? true}}]]
+  (let [{:keys [maximum] :as params} (merge {:maximum 10 :wait-seconds 20} params)
         chan (or chan (a/chan maximum))]
     (go-catching
       (loop []
@@ -23,7 +23,8 @@
                    (or (empty? messages)
                        (<? (onto-chan? chan messages))))
             (recur)
-            (a/close! chan)))))
+            (when close?
+              (a/close! chan))))))
     chan))
 
 (defn identify-batch [messages]
@@ -44,16 +45,17 @@
       (catch #? (:clj Exception :cljs js/Error) e
         (>! error-chan e)))))
 
-(defn- batch-cleanup! [issue-fn batch error-chan]
+(defn- batch-cleanup! [issue-fn batch error-chan close?]
   (go-catching
     (when (not-empty batch)
       (<? (batch-send! issue-fn batch error-chan)))
-    (a/close! error-chan)))
+    (when close?
+      (a/close! error-chan))))
 
 (defn batching-channel*
   [issue-fn
-   & [{:keys [period-ms threshold in-chan error-chan timeout-fn]
-       :or {period-ms 200 threshold 10 timeout-fn a/timeout}}]]
+   & [{:keys [period-ms threshold in-chan error-chan timeout-fn close?]
+       :or {period-ms 200 threshold 10 timeout-fn a/timeout close? true}}]]
   (let [in-chan    (or in-chan (a/chan))
         error-chan (or error-chan (a/chan))]
     (go-catching
@@ -64,7 +66,7 @@
                       in-chan ([v] v))
                     (<? in-chan))]
           (if (nil? msg)
-            (<? (batch-cleanup! issue-fn batch error-chan))
+            (<? (batch-cleanup! issue-fn batch error-chan close?))
             (let [batch (cond-> batch (not= msg ::timeout) (conj msg))]
               (if (or (= threshold (count batch)) (= msg ::timeout))
                 (do (<? (batch-send! issue-fn batch error-chan))
@@ -72,9 +74,11 @@
                 (recur batch)))))))
     {:in-chan in-chan :error-chan error-chan}))
 
-(defn batching-sends [creds queue-url]
+(defn batching-sends [creds queue-url & [opts]]
   (batching-channel*
-   (partial sqs/send-message-batch! creds queue-url)))
-(defn batching-deletes [creds queue-url]
+   (partial sqs/send-message-batch! creds queue-url)
+   opts))
+(defn batching-deletes [creds queue-url & [opts]]
   (batching-channel*
-   (partial sqs/delete-message-batch! creds queue-url)))
+   (partial sqs/delete-message-batch! creds queue-url)
+   opts))

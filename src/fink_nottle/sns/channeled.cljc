@@ -7,10 +7,8 @@
                 [cljs.core.async :as async])
             [glossop.core #? (:clj :refer :cljs :refer-macros) [go-catching <?]]))
 
-(defn paginate! [f map-arg {:keys [limit maximum chan]}]
-  (assert (or limit chan)
-          "Please supply either a page-size (limit) or output channel")
-  (let [chan (or chan (async/chan limit))]
+(defn paginate! [f map-arg {:keys [maximum chan close?] :or {close? true}}]
+  (let [chan (or chan (async/chan 100))]
     (go-catching
       (try
         (loop [next-token nil n 0]
@@ -22,28 +20,30 @@
                      next-token
                      (or (not maximum) (< n maximum)))
               (recur next-token n)
-              (async/close! chan))))
+              (when close?
+                (async/close! chan)))))
         (catch #? (:clj Exception :cljs js/Error) e
           (async/>! chan e)
-          (async/close! chan))))
+          (when close?
+            (async/close! chan)))))
     chan))
 
 (defn list-platform-applications! [creds & [opts]]
   (paginate!
    (partial sns/list-platform-applications! creds)
-   nil (merge {:limit 100} opts)))
+   nil opts))
 
 (defn list-endpoints-by-platform-application! [creds arn & [opts]]
   (paginate!
    (partial sns/list-endpoints-by-platform-application! creds arn)
-   nil (merge {:limit 100} opts)))
+   nil opts))
 
 (defn list-subscriptions! [creds & [opts]]
   (paginate!
    (partial sns/list-subscriptions! creds)
-   nil (merge {:limit 100} opts)))
+   nil opts))
 
 (defn list-subscriptions-by-topic! [creds arn & [opts]]
   (paginate!
    (partial sns/list-subscriptions-by-topic! creds arn)
-   nil (merge {:limit 100} opts)))
+   nil opts))

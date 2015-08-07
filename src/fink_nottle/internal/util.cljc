@@ -12,7 +12,7 @@
     x))
 
 (defn walk-values [form k->xform]
-  (walk/postwalk visit-values form))
+  (walk/postwalk #(visit-values % k->xform) form))
 
 (defn parse-numeric-keys [m ks]
   (reduce

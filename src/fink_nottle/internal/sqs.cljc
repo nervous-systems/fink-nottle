@@ -1,9 +1,10 @@
 (ns fink-nottle.internal.sqs
-  (:require [fink-nottle.internal :as i]
-            [fink-nottle.internal.util :as util]
-            [fink-nottle.internal.platform :refer [->int] :as platform]
-            [fink-nottle.sqs.tagged :as tagged]
+  (:require [clojure.set :as set]
             [eulalie.sqs]
+            [fink-nottle.internal :as i]
+            [fink-nottle.internal.platform :refer [->int] :as platform]
+            [fink-nottle.internal.util :as util]
+            [fink-nottle.sqs.tagged :as tagged]
             [plumbing.core :refer [map-vals]]))
 
 (def key->xform
@@ -26,8 +27,8 @@
 (defn attr-val-out [x]
   (let [x (cond-> x (keyword? x) name)]
    (cond
-     (string? x)          [:string x]
-     (number? x)          [:number (str x)]
+     (string? x)              [:string x]
+     (number? x)              [:number (str x)]
      (platform/byte-array? x) [:binary (platform/ba->b64-string x)]
      :else (throw (ex-info "bad-attr-type"
                            {:type :bad-attr-type :value x})))))
@@ -43,6 +44,9 @@
           (assoc
            :body (tagged/message-out tag body)
            :attrs (assoc attrs :fink-nottle-tag tag))))
+
+(defmethod i/restructure-request [:sqs :get-queue-url] [_ _ m]
+  (set/rename-keys m {:account :queue-owner-aws-account-id}))
 
 (defmethod i/restructure-request [:sqs :send-message]
   [_ _ message]
@@ -65,7 +69,7 @@
 
 (defn restructure-message [{:keys [attrs] :as m}]
   (-> m
-      (util/visit-values key->xform)
+      (util/walk-values key->xform)
       (assoc :attrs (map-vals attr-val-in attrs))
       augment-incoming))
 
