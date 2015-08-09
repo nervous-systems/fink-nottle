@@ -55,7 +55,7 @@ exposed via Clojurescript.  The implementation specifically targets
 [lein-npm](https://github.com/RyanMcG/lein-npm) for declaring its dependency on
 [bignumber.js](https://github.com/MikeMcl/bignumber.js/).
 
-The specific use-case I had in mind for Node support is [writing AWS Lambda
+The use-case I had in mind for Node support is [writing AWS Lambda
 functions in
 Clojurescript](https://nervous.io/clojure/clojurescript/aws/lambda/node/lein/2015/07/05/lambda/).
 
