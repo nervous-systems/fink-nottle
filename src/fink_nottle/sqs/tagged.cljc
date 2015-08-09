@@ -3,4 +3,4 @@
 (defmulti  message-in (fn [tag body] tag))
 (defmethod message-in :default [_ body] body)
 (defmulti  message-out (fn [tag body] tag))
-(defmethod message-in :default [_ body] body)
+(defmethod message-out :default [_ body] body)
