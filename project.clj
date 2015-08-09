@@ -1,5 +1,5 @@
-(defproject io.nervous/fink-nottle "1.0.0-SNAPSHOT"
-  :description "Asynchronous Clojure client for the Amazon SNS service"
+(defproject io.nervous/fink-nottle "0.4.0"
+  :description "Asynchronous Clojure/Clojurescript client for the Amazon SNS & SQS services"
   :url "https://github.com/nervous-systems/fink-nottle"
   :license {:name "Unlicense" :url "http://unlicense.org/UNLICENSE"}
   :scm {:name "git" :url "https://github.com/nervous-systems/fink-nottle"}
@@ -11,8 +11,7 @@
                  [org.clojure/core.async     "0.1.346.0-17112a-alpha"]
                  [org.clojure/clojurescript  "0.0-3308"]
 
-                 [io.nervous/eulalie     "1.0.0-SNAPSHOT"]
-                 [io.nervous/glossop     "1.0.0-SNAPSHOT"]
+                 [io.nervous/eulalie     "0.6.0"]
 
                  [prismatic/plumbing     "0.4.1"]
                  [cheshire               "5.5.0"]
@@ -52,6 +51,5 @@
               :node-dependencies []
               :dependencies
               [[com.cemerick/piggieback "0.2.1"]
-               [org.clojure/tools.nrepl "0.2.10"]
-               [com.cemerick/clojurescript.test "0.3.3"]]
+               [org.clojure/tools.nrepl "0.2.10"]]
               :source-paths ["src" "test"]}})
