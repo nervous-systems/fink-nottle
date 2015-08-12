@@ -15,7 +15,7 @@
     (go-catching
       (loop []
         (let [messages (try
-                         (-> (sqs/receive-message! creds queue-url params) <?)
+                         (<? (sqs/receive-message! creds queue-url params))
                          (catch #? (:clj Exception :cljs js/Error) e
                            (>! chan e)
                            ::error))]
