@@ -11,7 +11,7 @@
                  [org.clojure/core.async     "0.1.346.0-17112a-alpha"]
                  [org.clojure/clojurescript  "0.0-3308"]
 
-                 [io.nervous/eulalie     "0.6.0"]
+                 [io.nervous/eulalie     "0.6.1"]
 
                  [prismatic/plumbing     "0.4.1"]
                  [cheshire               "5.5.0"]
