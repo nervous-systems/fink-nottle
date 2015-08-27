@@ -21,6 +21,10 @@ on the wiki is a good place to start.
 * [Push Messaging on EC2 with core.async](https://nervous.io/clojure/aws/async/sns/messaging/2015/06/15/fink-nottle-sns/) (SNS)
 * [Pushing Events Over Websockets with SNS & Elastic Beanstalk](https://nervous.io/clojure/async/sns/eb/docker/2015/06/22/sns-beanstalk-chat/) (SNS)
 
+## Additional Functionality
+
+ * [Chard](https://github.com/sprightco/chard) is a synchronous Clojure library atop Fink-Nottle.  It simplifies the provisioning of sensibly-configured queues, and allows fuss-free transmission from SNS to SQS.
+ 
 ## SQS Example
 
 ```clojure
