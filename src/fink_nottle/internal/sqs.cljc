@@ -24,15 +24,6 @@
    :sent-timestamp ->int
    :sender-fault util/->bool})
 
-(defn attr-val-out [x]
-  (let [x (cond-> x (keyword? x) name)]
-   (cond
-     (string? x)              [:string x]
-     (number? x)              [:number (str x)]
-     (platform/byte-array? x) [:binary (platform/ba->b64-string x)]
-     :else (throw (ex-info "bad-attr-type"
-                           {:type :bad-attr-type :value x})))))
-
 (defn attr-val-in [[tag value]]
   (case tag
     :string value
@@ -51,7 +42,7 @@
 (defmethod i/restructure-request [:sqs :send-message]
   [_ _ message]
   (let [{:keys [attrs] :as message} (augment-outgoing message)]
-    (assoc message :attrs (map-vals attr-val-out attrs))))
+    (assoc message :attrs (map-vals util/attr-val-out attrs))))
 
 (defmethod i/restructure-request [:sqs :send-message-batch]
   [_ _ {:keys [messages generate-ids] :as m}]
@@ -59,7 +50,7 @@
          (map-indexed
           (fn [i msg]
             (let [{:keys [attrs] :as msg} (augment-outgoing msg)]
-              (cond-> (assoc msg :attrs (map-vals attr-val-out attrs))
+              (cond-> (assoc msg :attrs (map-vals util/attr-val-out attrs))
                 generate-ids (assoc :id (str i)))))
           messages)))
 
