@@ -43,7 +43,7 @@
         (when-let [exs (some->> failed vals (map failure->throwable) not-empty)]
           (<? (a/onto-chan error-chan exs false))))
       (catch #? (:clj Exception :cljs js/Error) e
-             (>! error-chan e)))))
+        (>! error-chan e)))))
 
 (defn- batch-cleanup! [issue-fn batch error-chan close?]
   (go-catching
