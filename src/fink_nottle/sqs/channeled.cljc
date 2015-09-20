@@ -1,30 +1,30 @@
 (ns fink-nottle.sqs.channeled
   (:require [fink-nottle.sqs :as sqs]
             [fink-nottle.internal.util :as util]
-            [glossop.util :refer [onto-chan?]]
             [glossop.core #? (:clj :refer :cljs :refer-macros) [go-catching <?]]
-            #? (:clj
-                [clojure.core.async :as a :refer [>! alt!]]
-                :cljs
-                [cljs.core.async :as a :refer [>!]]))
+            #?@ (:clj
+                 [[clojure.core.async :as a :refer [>! alt!]]
+                  [clojure.core.async.impl.protocols :as async-protocols]]
+                 :cljs
+                 [[cljs.core.async :as a :refer [>!]]
+                  [cljs.core.async.impl.protocols :as async-protocols]]))
   #? (:cljs (:require-macros [cljs.core.async.macros :refer [alt!]])))
 
 (defn receive! [creds queue-url & [params {:keys [chan close?] :or {close? true}}]]
   (let [{:keys [maximum] :as params} (merge {:maximum 10 :wait-seconds 20} params)
         chan (or chan (a/chan maximum))]
     (go-catching
-      (loop []
-        (let [messages (try
-                         (<? (sqs/receive-message! creds queue-url params))
-                         (catch #? (:clj Exception :cljs js/Error) e
-                           (>! chan e)
-                           ::error))]
-          (if (and (not= messages ::error)
-                   (or (empty? messages)
-                       (<? (onto-chan? chan messages))))
-            (recur)
-            (when close?
-              (a/close! chan))))))
+      (try
+        (loop []
+          (let [messages (<? (sqs/receive-message! creds queue-url params))]
+            (when-not (empty? messages)
+              (<? (a/onto-chan chan messages false)))
+            (when-not (async-protocols/closed? chan)
+              (recur))))
+        (catch #? (:clj Exception :cljs js/Error) e
+          (>! chan e)))
+      (when close?
+        (a/close! chan)))
     chan))
 
 (defn identify-batch [messages]

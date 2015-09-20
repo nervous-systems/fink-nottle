@@ -1,6 +1,15 @@
 (ns fink-nottle.internal.util
   (:require [clojure.walk :as walk]
-            [fink-nottle.internal.platform :refer [->int]]))
+            [fink-nottle.internal.platform :as platform :refer [->int]]))
+
+(defn attr-val-out [x]
+  (let [x (cond-> x (keyword? x) name)]
+   (cond
+     (string? x)              [:string x]
+     (number? x)              [:number (str x)]
+     (platform/byte-array? x) [:binary (platform/ba->b64-string x)]
+     :else (throw (ex-info "bad-attr-type"
+                           {:type :bad-attr-type :value x})))))
 
 (defn visit-values [x k->xform]
   (if (map? x)
