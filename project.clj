@@ -1,4 +1,4 @@
-(defproject io.nervous/fink-nottle "0.4.5"
+(defproject io.nervous/fink-nottle "0.4.6"
   :description "Asynchronous Clojure/Clojurescript client for the Amazon SNS & SQS services"
   :url "https://github.com/nervous-systems/fink-nottle"
   :license {:name "Unlicense" :url "http://unlicense.org/UNLICENSE"}
@@ -10,7 +10,7 @@
   :dependencies [[org.clojure/clojure        "1.7.0"]
                  [org.clojure/clojurescript  "0.0-3308"]
 
-                 [io.nervous/eulalie     "0.6.3"]
+                 [io.nervous/eulalie     "0.6.4"]
 
                  [prismatic/plumbing     "0.4.1"]
                  [cheshire               "5.5.0"]
