@@ -69,3 +69,12 @@
          (is (= #{"0" "1"}
                 (into #{} (for [f failures]
                             (-> f ex-data :batch-id))))))))))
+
+(deftest batching-channel+failure-without-blocking
+  (let [{:keys [in-chan]}
+        (channeled/batching-channel*
+         failing-batch-mock
+         {:timeout-fn (constantly closed-ch)})]
+    (go-catching
+     (alt! (a/timeout 1000) (is false "Test timed out")
+           (a/onto-chan in-chan (for [id (range 20)] {:id (str id)})) :okay))))
