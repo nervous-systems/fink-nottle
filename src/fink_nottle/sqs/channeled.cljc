@@ -57,7 +57,7 @@
    & [{:keys [period-ms threshold in-chan error-chan timeout-fn close?]
        :or {period-ms 200 threshold 10 timeout-fn a/timeout close? true}}]]
   (let [in-chan    (or in-chan (a/chan))
-        error-chan (or error-chan (a/chan))]
+        error-chan (or error-chan (a/chan (a/dropping-buffer 10)))]
     (go-catching
       (loop [batch []]
         (let [msg (if (not-empty batch)
